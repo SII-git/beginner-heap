@@ -7,7 +7,7 @@
 [https://github.com/SII-git/beginner-heap](https://github.com/SII-git/begginer-heap)
 우측 상단 Fork 버튼 클릭
 → 내 계정에 저장소 복사됨
-예: https://github.com/\[자기 ID\]/beginner-heap
+예: `https://github.com/[자기 ID]/beginner-heap`
 2. 로컬 과제 폴더에 Git 초기화
 ```bash
 cd [과제 폴더]

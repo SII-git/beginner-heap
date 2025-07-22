@@ -1,6 +1,26 @@
 
 # 비기너 커리큘럼 과제
 
+## 업로드 양식
+
+기본적으로 제출자의 **임의** 양식.
+
+폴더 혹은 소스코드 이외의 파일(Makefile, .gitignore 등)이 많다면, **src** 폴더 내에 소>스코드 저장 바람.
+
+`README 파일`로 저장 및 빌드 방법 등을 설명하셔도 됩니다.
+
+예시:
+```plaintext
+.
+├─ src
+│   ├─ source1.c
+│   └─ source2.cpp
+├─ include
+│   ├─ source1.h
+│   └─ source2.hpp
+└─ Makefile
+```
+
 ## 업로드 방식
 ### 1. fork
 브라우저로 이동

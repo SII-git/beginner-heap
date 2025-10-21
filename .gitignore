@@ -1,0 +1,8 @@
+*.o
+*.so
+test_myheap
+stress
+test_asan
+stress_asan
+exact_reuse
+/build/

@@ -18,6 +18,9 @@
 // 청크를 분할할 때의 최소 크기
 #define MIN_SIZE (sizeof(block_t) + 8) 
 
+// Memory Alignment 적용
+#define ALIGNMENT 8
+#define ALIGN(size) (((size) + (ALIGNMENT - 1)) & ~ (ALIGNMENT - 1))
 
 // 청크 헤더 구조체
 typedef struct block{
@@ -35,6 +38,8 @@ static block_t* g_free_list_head = NULL;
 
 
 /*   내부 함수   */
+
+
 
 // 자유목록에 여유가 있는지 확인
 static block_t* find_free_block(size_t size){
@@ -56,10 +61,10 @@ static void unlink_free_list(block_t* block){
     block->prev = NULL;
 }
 
-
+// malloc시 블럭을 분할할 수 있을 경우
 static void split_block(block_t* block, size_t total_size){
 
-    // 쪼개진 후 자유목록에 남아있는 블럭
+    // 분할 후 자유목록에 남아있는 블럭
     block_t* remain_block = (block_t*)((char*)block + total_size);
 
     remain_block->free = 1;
@@ -173,7 +178,11 @@ void *my_malloc(size_t size){
         return 0;
     }
 
-    size_t total_size = size + sizeof(block_t);
+    // Memory Alignment 적용
+    size_t aligned_size = ALIGN(size);
+    size_t total_size = aligned_size + sizeof(block_t);
+
+    // 자유목록에 여유가 있는지 확인
     block_t* found_block = find_free_block(total_size);
 
     if (found_block){

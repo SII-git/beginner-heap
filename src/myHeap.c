@@ -253,6 +253,11 @@ void my_free(void* ptr){
     //블럭의 헤더 위치로 이동
     block_t* block = (block_t*)ptr -1;
     
+    if (block->free == 1) {
+        printf("Error: Double free %p\n", ptr);
+        return; 
+    }
+
     merge(block);
 }
 

@@ -18,6 +18,8 @@
 // 청크를 분할할 때의 최소 크기
 #define MIN_SIZE (sizeof(block_t) + 8) 
 
+
+// 청크 헤더 구조체
 typedef struct block{
     size_t size; // 헤더 포함 크기   
     size_t prev_size; // 이전 블록이 free면 이전 블록의 size 저장, 할당 중이면 0
@@ -31,8 +33,11 @@ typedef struct block{
 static block_t* g_free_list_head = NULL;
 
 
+
+/*   내부 함수   */
+
 // 자유목록에 여유가 있는지 확인
-block_t* find_free_block(size_t size){
+static block_t* find_free_block(size_t size){
     block_t* now_block = g_free_list_head;
     while(now_block){
         if(now_block->free == 1 && now_block->size >= size) return now_block;
@@ -42,7 +47,7 @@ block_t* find_free_block(size_t size){
 }
 
 // 자유목록에서 청크 제거
-void unlink_free_list(block_t* block){
+static void unlink_free_list(block_t* block){
     if (block->prev) block->prev->next = block->next;
     if (block->next) block->next->prev = block->prev;
     if (block == g_free_list_head) g_free_list_head = block->next;
@@ -52,7 +57,7 @@ void unlink_free_list(block_t* block){
 }
 
 
-void split_block(block_t* block, size_t total_size){
+static void split_block(block_t* block, size_t total_size){
 
     // 쪼개진 후 자유목록에 남아있는 블럭
     block_t* remain_block = (block_t*)((char*)block + total_size);
@@ -80,7 +85,7 @@ void split_block(block_t* block, size_t total_size){
 
 }
 
-block_t* call_mmap(size_t total_size){
+static block_t* call_mmap(size_t total_size){
 
     // 센티넬 블럭의 크기를 더한 총 크기
     size_t request_size = total_size + sizeof(block_t);
@@ -117,8 +122,9 @@ block_t* call_mmap(size_t total_size){
     return new_block;
 }
 
-void merge(block_t* block){
+static void merge(block_t* block){
 
+    // block의 물리적 앞 뒤 블럭 free 여부 확인
     block_t* next_block = (block_t*)((char*)block + block->size);
     block_t* prev_block = NULL;
     // prev_block이 free일때만 prev_block 설정 (block이 맨 첫번째 블럭일때 에러 방지)
@@ -127,6 +133,7 @@ void merge(block_t* block){
     }
 
     block->free = 1;
+
     // prev블럭과 결합 여부
     int mergePrev = 0;
     block_t* current_block = block;
@@ -137,12 +144,14 @@ void merge(block_t* block){
     }
 
     if(prev_block && prev_block->free == 1){
+        // 포인터를 prev_block으로 옮김
         prev_block->size += current_block->size;
         current_block = prev_block;
         mergePrev = 1;
     }
 
     if (mergePrev == 0){
+        // prev와 병합했다면 자유목록 처리 작업이 필요없음
         current_block->next = g_free_list_head;
         current_block->prev = NULL;
         if(g_free_list_head) g_free_list_head->prev = current_block;
@@ -152,6 +161,12 @@ void merge(block_t* block){
     block_t* new_next = (block_t*)((char*)current_block + current_block->size);
     new_next->prev_size = current_block->size; 
 }
+
+
+
+
+/* public API 함수 */
+
 
 void *my_malloc(size_t size){
     if(size == 0){

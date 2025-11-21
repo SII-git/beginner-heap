@@ -22,6 +22,12 @@
 #define ALIGNMENT 8
 #define ALIGN(size) (((size) + (ALIGNMENT - 1)) & ~ (ALIGNMENT - 1))
 
+// Page Alignment 적용
+#define PAGE_SIZE 4096 // 4KB로 가정하지만 sysconf(_SC_PAGESIZE)로 획득 가능
+#define PAGE_ALIGN(size) (((size) + (PAGE_SIZE - 1)) & ~ (PAGE_SIZE - 1))
+
+
+
 // 청크 헤더 구조체
 typedef struct block{
     size_t size; // 헤더 포함 크기   
@@ -90,11 +96,32 @@ static void split_block(block_t* block, size_t total_size){
 
 }
 
+static void split_block_mmap(block_t* block, size_t total_size){
+
+    // 분할 후 자유목록에 추가할 블럭
+    block_t* remain_block = (block_t*)((char*)block + total_size);
+
+    remain_block->free = 1;
+    remain_block->prev_size = 0;
+    remain_block->size = block->size - total_size;
+    
+    remain_block->prev = NULL;
+    remain_block->next = g_free_list_head;
+    if(g_free_list_head) g_free_list_head->prev = remain_block;
+    g_free_list_head = remain_block;
+
+    // 물리적으로 next에 위치한 블럭의 prev_size를 remain__block의 size로 업데이트
+    block_t* next_remain_block = (block_t*)((char*)remain_block + remain_block->size);
+    next_remain_block->prev_size = remain_block->size;
+
+    block->size = total_size;
+}
+
+
 static block_t* call_mmap(size_t total_size){
 
-    // 센티넬 블럭의 크기를 더한 총 크기
-    size_t request_size = total_size + sizeof(block_t);
-
+    size_t aligned_size = PAGE_ALIGN(total_size);
+    
     /*  *** mmap() 설명 ***
     * MMAP - Memory Map 
     *
@@ -106,13 +133,16 @@ static block_t* call_mmap(size_t total_size){
     * 5번인자 : 파일 디스크립터 (메모리 할당 시 -1)
     * 6번인자 : 파일 오프셋 (메모리 할당 시 0)
     */
-    void* block_ptr = mmap(NULL, request_size, PROT_READ | PROT_WRITE, 
+    void* block_ptr = mmap(NULL, aligned_size, PROT_READ | PROT_WRITE, 
                             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
     if (block_ptr == MAP_FAILED) return NULL; 
 
     block_t* new_block = (block_t*)block_ptr;
-    new_block->size = total_size;
+
+    // 센티넬 블럭 공간 확보
+    new_block->size = aligned_size - sizeof(block_t);
+
     new_block->free = 0;
     new_block->next = NULL;
     new_block->prev = NULL;
@@ -205,6 +235,13 @@ void *my_malloc(size_t size){
 
     } else {  //자유목록에서 찾지 못했을 경우 mmap() 호출
         block_t* new_block = call_mmap(total_size);
+
+        if (new_block == NULL) return NULL;
+
+        if (new_block->size - total_size >= MIN_SIZE) {
+            split_block_mmap(new_block, total_size);
+        }
+
         return (void*)(new_block + 1);
     }   
 }

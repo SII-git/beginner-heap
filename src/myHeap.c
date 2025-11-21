@@ -14,7 +14,6 @@
 #define PAGE_ALIGN(size) (((size) + (PAGE_SIZE - 1)) & ~ (PAGE_SIZE - 1))
 
 
-
 // 청크 헤더 구조체
 typedef struct block{
     size_t size; // 헤더 포함 크기   

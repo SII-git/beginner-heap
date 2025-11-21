@@ -152,7 +152,7 @@ static block_t* call_mmap(size_t total_size){
     block_t* last_block = (block_t*)((char*)new_block + new_block->size);
     last_block->size = 0;
     last_block->free = 0;
-    last_block->prev_size = total_size;
+    last_block->prev_size = new_block->size;
 
     return new_block;
 }

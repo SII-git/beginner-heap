@@ -2,19 +2,6 @@
 #include <sys/mman.h>
 #include <stdio.h>
 
-/*    *** 구현 목표 ***
- *
- *    청크 병합
- *    bin
- *    page alignment
- *    (실제 mmap는 페이지 단위 (약 4KB)로 할당하는데 고려되어있지 않음)
- *    아레나 헤더
- *    Top chunnk(sbrk)
- * 
- * 
-*/
-
-
 // 청크를 분할할 때의 최소 크기
 #define MIN_SIZE (sizeof(block_t) + 8) 
 
